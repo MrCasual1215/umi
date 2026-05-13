@@ -1,0 +1,9 @@
+### others
+umidata/single/
+umidata/double/
+umidata/data_process/__pycache__/
+
+dataset/single/
+dataset/double/
+dataset/opensource/
+.git_backup/

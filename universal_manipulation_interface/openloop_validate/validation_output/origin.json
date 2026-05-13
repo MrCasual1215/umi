@@ -1,0 +1,198 @@
+{
+  "episode_count": 5,
+  "successful_episode_count": 5,
+  "position_error_m": {
+    "count": 12864,
+    "mean": 0.005463974706498211,
+    "median": 0.003737877475447818,
+    "std": 0.006827061228049855,
+    "min": 2.7677457470933662e-05,
+    "max": 0.12750689981551164
+  },
+  "rotation_error_rad": {
+    "count": 12864,
+    "mean": 0.01281084070185214,
+    "median": 0.010734628434593458,
+    "std": 0.00909511216436845,
+    "min": 0.00018040679005148144,
+    "max": 0.08042994177815666
+  },
+  "rotation_error_deg": {
+    "count": 12864,
+    "mean": 0.7340071042305408,
+    "median": 0.6150489039433307,
+    "std": 0.5211115412164077,
+    "min": 0.010336547665452615,
+    "max": 4.608296210371312
+  },
+  "episodes": [
+    {
+      "episode_name": "episode148",
+      "sample_count": 158,
+      "successful_sample_count": 158,
+      "failed_sample_count": 0,
+      "position_error_m": {
+        "count": 2528,
+        "mean": 0.005401396817662116,
+        "median": 0.0036678953393120464,
+        "std": 0.0076051685643127,
+        "min": 6.866631332534242e-05,
+        "max": 0.08130096851246804
+      },
+      "rotation_error_rad": {
+        "count": 2528,
+        "mean": 0.013113170929521637,
+        "median": 0.011453613983832916,
+        "std": 0.008487692783222422,
+        "min": 0.0005262520670820423,
+        "max": 0.08042994177815666
+      },
+      "rotation_error_deg": {
+        "count": 2528,
+        "mean": 0.7513293502952326,
+        "median": 0.6562437414456471,
+        "std": 0.4863089742822919,
+        "min": 0.030152022403836506,
+        "max": 4.608296210371312
+      },
+      "result_path": "/home/sunpeng/sp/umi_project/universal_manipulation_interface/openloop_validate/validation_output/episode148_validation.json"
+    },
+    {
+      "episode_name": "episode149",
+      "sample_count": 160,
+      "successful_sample_count": 160,
+      "failed_sample_count": 0,
+      "position_error_m": {
+        "count": 2560,
+        "mean": 0.00750845941136064,
+        "median": 0.005333019001642302,
+        "std": 0.009149392363207194,
+        "min": 3.351684350937101e-05,
+        "max": 0.12750689981551164
+      },
+      "rotation_error_rad": {
+        "count": 2560,
+        "mean": 0.016570623132522628,
+        "median": 0.014239795316575495,
+        "std": 0.010914858093248072,
+        "min": 0.00036007970369742197,
+        "max": 0.07717022957193413
+      },
+      "rotation_error_deg": {
+        "count": 2560,
+        "mean": 0.9494267693953979,
+        "median": 0.8158801727699319,
+        "std": 0.6253753027273237,
+        "min": 0.020631047310183503,
+        "max": 4.421528458527483
+      },
+      "result_path": "/home/sunpeng/sp/umi_project/universal_manipulation_interface/openloop_validate/validation_output/episode149_validation.json"
+    },
+    {
+      "episode_name": "episode150",
+      "sample_count": 169,
+      "successful_sample_count": 169,
+      "failed_sample_count": 0,
+      "position_error_m": {
+        "count": 2704,
+        "mean": 0.007294815673285189,
+        "median": 0.0053637563431917674,
+        "std": 0.007516166967599889,
+        "min": 8.198903339756808e-05,
+        "max": 0.07985114873417669
+      },
+      "rotation_error_rad": {
+        "count": 2704,
+        "mean": 0.01591323258660966,
+        "median": 0.014285737700934255,
+        "std": 0.009493731052279875,
+        "min": 0.00028828853057187657,
+        "max": 0.07222318493396704
+      },
+      "rotation_error_deg": {
+        "count": 2704,
+        "mean": 0.9117610656227836,
+        "median": 0.8185124774944567,
+        "std": 0.5439507211279307,
+        "min": 0.01651771608379673,
+        "max": 4.138083679709145
+      },
+      "result_path": "/home/sunpeng/sp/umi_project/universal_manipulation_interface/openloop_validate/validation_output/episode150_validation.json"
+    },
+    {
+      "episode_name": "episode151",
+      "sample_count": 168,
+      "successful_sample_count": 168,
+      "failed_sample_count": 0,
+      "position_error_m": {
+        "count": 2688,
+        "mean": 0.0037253150913313317,
+        "median": 0.0028061680402601498,
+        "std": 0.003182584430251041,
+        "min": 5.684001076558942e-05,
+        "max": 0.026269323331474578
+      },
+      "rotation_error_rad": {
+        "count": 2688,
+        "mean": 0.009167432736369325,
+        "median": 0.008201787273990523,
+        "std": 0.005601278945581372,
+        "min": 0.00018040679005148144,
+        "max": 0.05222886530298536
+      },
+      "rotation_error_deg": {
+        "count": 2688,
+        "mean": 0.5252552047640299,
+        "median": 0.4699277952637655,
+        "std": 0.3209296434573005,
+        "min": 0.010336547665452615,
+        "max": 2.992493550618325
+      },
+      "result_path": "/home/sunpeng/sp/umi_project/universal_manipulation_interface/openloop_validate/validation_output/episode151_validation.json"
+    },
+    {
+      "episode_name": "episode152",
+      "sample_count": 149,
+      "successful_sample_count": 149,
+      "failed_sample_count": 0,
+      "position_error_m": {
+        "count": 2384,
+        "mean": 0.0032186891066267416,
+        "median": 0.0024161650150199827,
+        "std": 0.0028347173436869223,
+        "min": 2.7677457470933662e-05,
+        "max": 0.03307604495106281
+      },
+      "rotation_error_rad": {
+        "count": 2384,
+        "mean": 0.009042081942107387,
+        "median": 0.0075953722189354336,
+        "std": 0.007005066118978585,
+        "min": 0.00019178802908806816,
+        "max": 0.06678014466774124
+      },
+      "rotation_error_deg": {
+        "count": 2384,
+        "mean": 0.5180731332942081,
+        "median": 0.43518277197591543,
+        "std": 0.40136072382756033,
+        "min": 0.010988644627878573,
+        "max": 3.826220444734642
+      },
+      "result_path": "/home/sunpeng/sp/umi_project/universal_manipulation_interface/openloop_validate/validation_output/episode152_validation.json"
+    }
+  ],
+  "run_config": {
+    "input_dir": "/home/sunpeng/sp/umi_project/universal_manipulation_interface/openloop_validate/json_output",
+    "output_dir": "/home/sunpeng/sp/umi_project/universal_manipulation_interface/openloop_validate/validation_output",
+    "checkpoint_path": "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.05.03/10.52.21_train_diffusion_unet_timm_picknplace/checkpoints",
+    "checkpoint_epoch": "latest",
+    "arm": "arm_l",
+    "device": null,
+    "crop": true,
+    "add_height": false,
+    "height": 0.0,
+    "sample_limit": null,
+    "episodes": []
+  }
+}
