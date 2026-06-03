@@ -9,20 +9,21 @@ MAX_CLIENTS = 1
 
 
 ## ------------------------------------- Policy inference ------------------------------------
-TASK = "green apple" # "green apple"
+TASK = "orange block" # "orange block"
+MODE = "umi"  # "umi" or "tele"
 CAMERA = "rgb" # "rgb"
 EPOCH = "latest"  # "latest"
 CROP = True   
 POLICY_MODEL = "unet_timm"  # "unet_timm" or "transformer"
 ADD_HEIGHT = False
-HEIGHT = 0.0 # meters
+HEIGHT = 0.0 # meters  
 
 
 
 DEFAULT_POLICY_ARM = "arm_l"
 
 # Logging / saving
-BOOL = True
+BOOL = False
 VERBOSE = BOOL     ## Whether to print verbose messages.
 DATA_SAVE = BOOL     ## Whether to save payload records.
 PICT_SAVE = BOOL ## Whether to save payload records.
@@ -34,114 +35,82 @@ ACTION_CHUNK_HORIZON = 16 ## Keep the first N actions from the predicted action 
 
 
 POLICY_CONFIGS = [
+# --------------------------------------------orange block -------------------------------------------- #
+
+# --------------------------------------------umi -------------------------------------------- #
     # {
-    #     "task": "red block",
-    #     "camera": "fisheye",
-    #     "crop": False,
-    #     "model": "unet_timm",
-    #     "train_episode_count": 100,
-    #     "epochs": {"latest"},
-    #     "checkpoint_path": (
-    #         "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.04.28/08.42.57_train_diffusion_unet_timm_picknplace/checkpoints"
-    #     ),
-    # },  # 100 episode data, fisheye + no crop, 60 epoch
-    # {
-    #     "task": "red block",
-    #     "camera": "fisheye",
+    #     "task": "orange block",
+    #     "mode": "umi",
+    #     "camera": "rgb",
     #     "crop": True,
     #     "model": "unet_timm",
-    #     "train_episode_count": 100,
-    #     "epochs": {"latest"},
+    #     "train_episode_count": 201,
+    #     "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "latest"},
     #     "checkpoint_path": (
-    #         "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.04.28/14.36.42_train_diffusion_unet_timm_picknplace/checkpoints"
+    #         "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.05.13/20.45.39_train_diffusion_unet_timm_picknplace/checkpoints"
     #     ),
-    # },  # 100 episode data, fisheye + crop, 40 epoch
+    # },
+
+    # {
+    #     "task": "orange block",
+    #     "mode": "umi",
+    #     "camera": "rgb",
+    #     "crop": True,
+    #     "model": "unet_timm",
+    #     "train_episode_count": 201,
+    #     "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "latest"},
+    #     "checkpoint_path": (
+    #         "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.05.28/11.05.29_train_diffusion_unet_timm_picknplace/checkpoints"
+    #     ),
+    # },
+
     {
-        "task": "red block",
-        "camera": "fisheye",
-        "crop": True,
-        "model": "unet_timm",
-        "train_episode_count": 200,
-        "epochs": {"10", "20", "30", "40", "50", "latest"},
-        "checkpoint_path": (
-            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.04.28/20.24.37_train_diffusion_unet_timm_picknplace/checkpoints"
-        ),
-    },  # 200 episode data, fisheye + crop, 59 epoch
-    {
-        "task": "red block",
+        "task": "orange block",
+        "mode": "umi",
         "camera": "rgb",
         "crop": True,
         "model": "unet_timm",
-        "train_episode_count": 200,
-        "epochs": {"10", "20", "30", "40", "50", "latest"},
+        "train_episode_count": 251,
+        "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "latest"},
         "checkpoint_path": (
-            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.04.29/07.27.29_train_diffusion_unet_timm_picknplace/checkpoints"
+            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.06.01/19.59.20_train_diffusion_unet_timm_picknplace/checkpoints"
         ),
-    },  # 200 episode data, RGB + crop, 60 epoch
-    # {
-    #     "task": "green apple",
-    #     "camera": "fisheye",
-    #     "crop": True,
-    #     "model": "unet_timm",
-    #     "train_episode_count": 150,
-    #     "epochs": {"10", "20", "30", "40", "50", "latest"},
-    #     "checkpoint_path": (
-    #         "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.04.29/18.59.34_train_diffusion_unet_timm_picknplace/checkpoints"
-    #     ),
-    # },  # 150 episode data, fisheye + crop, 60 epoch 待测试
-        # {
-        # "task": "green apple",
-        # "camera": "rgb",
-        # "crop": True,
-        # "model": "unet_timm",
-        # "train_episode_count": 150,
-        # "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "latest"}, # 110 epoch
-        # "checkpoint_path": (
-        #     "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.04.30/09.03.52_train_diffusion_unet_timm_picknplace/checkpoints"
-        # ),
-        # },  # 150 episode data, rgb + crop, 110 epoch  待测试
-# --------------------------------------------During Laboratory Day --------------------------------------------
-    {
-        "task": "green apple",
-        "camera": "fisheye",
-        "crop": True,
-        "model": "unet_timm",
-        "train_episode_count": 300,
-        "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "latest"}, # 120 epoch
-        "checkpoint_path": (
-            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.05.01/16.44.26_train_diffusion_unet_timm_picknplace/checkpoints"
-        ),
-    },  # 300 episode data, fisheye + crop, 120 epoch  待测试
+    },
 
 
     {
-        "task": "green apple",
+        "task": "orange block",
+        "mode": "umi",
         "camera": "rgb",
-        "crop": True,
-        "model": "unet_timm",
-        "train_episode_count": 300,
-        "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "latest"}, # 120 epoch
-        "checkpoint_path": (
-            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.05.03/10.52.21_train_diffusion_unet_timm_picknplace/checkpoints"
-        ),
-    },  # 300 episode data, rgb + crop, 120 epoch  待测试
-
-        {
-        "task": "green apple",
-        "camera": "fisheye",
         "crop": True,
         "model": "transformer",
-        "train_episode_count": 300,
-        "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "latest"}, # 200 epoch
+        "train_episode_count": 603,
+        "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "120", "130", "140", "150", "160", "latest"},
         "checkpoint_path": (
-            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.05.04/21.34.50_train_diffusion_transformer_timm_picknplace/checkpoints"
+            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.05.29/14.57.20_train_diffusion_transformer_timm_picknplace/checkpoints"
         ),
-    },  # 300 episode data, fisheye + crop, 200 epoch  待测试   
+    },
+# --------------------------------------------tele -------------------------------------------- #
+
+    {
+        "task": "orange block",
+        "mode": "tele",
+        "camera": "rgb",
+        "crop": True,
+        "model": "unet_timm",
+        "train_episode_count": 201,
+        "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "latest"},
+        "checkpoint_path": (
+            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.05.26/20.45.38_train_diffusion_unet_timm_picknplace/checkpoints"
+        ),
+    },
+
 ]
 
 
-def _select_policy_checkpoint_path(task, camera, crop, epoch, model):
+def _select_policy_checkpoint_path(task, mode, camera, crop, epoch, model):
     task = task.strip().lower()
+    mode = mode.strip().lower()
     camera = camera.strip().lower()
     epoch = str(epoch).strip().lower()
     model = model.strip().lower()
@@ -150,6 +119,7 @@ def _select_policy_checkpoint_path(task, camera, crop, epoch, model):
     for config in POLICY_CONFIGS:
         if (
             config["task"] == task
+            and config["mode"] == mode
             and config["camera"] == camera
             and config["crop"] == crop
             and config["model"] == model
@@ -166,21 +136,23 @@ def _select_policy_checkpoint_path(task, camera, crop, epoch, model):
         )
         raise ValueError(
             "Multiple matching policy configs found for "
-            f"task={task!r}, camera={camera!r}, crop={crop!r}, epoch={epoch!r}, model={model!r}. "
+            f"task={task!r}, mode={mode!r}, camera={camera!r}, crop={crop!r}, epoch={epoch!r}, model={model!r}. "
             f"Candidates: {match_desc}"
         )
 
     available_configs = ", ".join(
-        f'{config["task"]} | {config["camera"]} | crop={config["crop"]} | '
+        f'{config["task"]} | {config["mode"]} | {config["camera"]} | crop={config["crop"]} | '
         f'model={config["model"]} | epochs={sorted(config["epochs"])}'
         for config in POLICY_CONFIGS
     )
     raise ValueError(
         "No matching policy config for "
-        f"TASK={TASK!r}, CAMERA={CAMERA!r}, CROP={CROP!r}, EPOCH={EPOCH!r}, POLICY_MODEL={POLICY_MODEL!r}. "
+        f"TASK={TASK!r}, MODE={MODE!r}, CAMERA={CAMERA!r}, CROP={CROP!r}, EPOCH={EPOCH!r}, POLICY_MODEL={POLICY_MODEL!r}. "
         f"Available configs: {available_configs}"
     )
 
 
-POLICY_CHECKPOINT_PATH = _select_policy_checkpoint_path(TASK, CAMERA, CROP, EPOCH, POLICY_MODEL)
+POLICY_CHECKPOINT_PATH = _select_policy_checkpoint_path(
+    TASK, MODE, CAMERA, CROP, EPOCH, POLICY_MODEL
+)
 print(POLICY_CHECKPOINT_PATH)

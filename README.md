@@ -10,14 +10,29 @@
 cd umidata/single
 scp yxgn@192.168.100.14:/home/yxgn/agilex/green_apple/data_150.zip ./
 unzip data_150.zip
+```
 
+### 1.2 数据清洗
+
+- 遥操
+  - 检查每个episode中首帧位置是否异常 检查时间同步文件是否符合格式
+
+```
+python3 clean_and_analyze_umidata_single_arm_tele.py 
+```
+
+- umi 
+  - 检查所有文件非空 并且有同步文件
+
+```
+python3 clean_and_analyze_umidata_single_arm_umi.py 
 ```
 
 ### 1.2 数据格式转换
 
-修改 convert\_umidata\_single\_arm\_to\_umi\_zarr.py 参数
+修改 convert\_umidata\_single\_arm\_to\_umi\_zarr\_tele.py 参数
 
-```python
+```YAML
 CROP = True
 FISHEYE = False
 DATE = "20260428"
@@ -28,7 +43,7 @@ DATE = "20260428"
 ```bash
 cd ../data_process
 conda activate umi
-python convert_umidata_single_arm_to_umi_zarr.py
+python convert_umidata_single_arm_to_umi_zarr_tele.py
 ```
 
 检查转换结果是否正确
@@ -50,7 +65,8 @@ dataset_path: ../dataset/single/20260429_fisheye_croped_single.zarr.zip
 #### 2.2 进行训练
 
 ```Shell
-cd ../../universal_manipulation_interface/
+cd ~/sp/umi_project/universal_manipulation_interface/
+conda activate umi
 python3 train.py --config-name=train_diffusion_unet_timm_umi_workspace task=picknplace
 ```
 
@@ -69,7 +85,12 @@ bash train_script.sh
 
 ```bash
 rm -r json_output/*
-python episode2json.py   --episode-dir /home/sunpeng/sp/umi_project/umidata/single/20260430   --start-index 148   --end-index 152   --output-dir /home/sunpeng/sp/umi_project/universal_manipulation_interface/openloop_validate/json_output   --camera-name pikaDepthCamera  ## 这里要注意是鱼眼还是RGB相机
+python episode2json.py \
+  --episode-dir /home/sunpeng/sp/umi_project/umidata/single/20260601 \
+  --start-index 90 \
+  --end-index 100 \
+  --camera-name pikaGripperDepthCamera \
+  --pose-rel-path arm/endPose/sensorPose
 ```
 
 #### 3.2 开环验证

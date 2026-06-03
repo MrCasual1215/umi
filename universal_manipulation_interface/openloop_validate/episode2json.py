@@ -18,7 +18,8 @@ END_INDEX = 20
 OBS_HORIZON = 2
 ACT_HORIZON = 16
 DOWN_SAMPLE_STEPS = 3
-CAMERA_NAME = "pikaFisheyeCamera"  # or pikaDepthCamera
+CAMERA_NAME = "pikaGripperDepthCamera"  # or pikaGripperFisheyeCamera
+POSE_REL_PATH = ""
 
 @dataclass(frozen=True)
 class AlignedFrame:
@@ -60,7 +61,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--camera-name",
         type=str,
-        default="pikaFisheyeCamera",
+        default=CAMERA_NAME,
         help="RGB camera directory name under camera/color/",
     )
     parser.add_argument(
@@ -68,6 +69,16 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default="pika",
         help="Pose device directory name under localization/pose/",
+    )
+    parser.add_argument(
+        "--pose-rel-path",
+        type=str,
+        default=POSE_REL_PATH,
+        help=(
+            "Optional pose directory path relative to each episode, for example "
+            "'arm/endPose/sensorPose'. When provided, it is tried before the built-in "
+            "auto-detected pose locations."
+        ),
     )
     parser.add_argument(
         "--gripper-device",
@@ -209,12 +220,40 @@ def pose7_xyzw_to_action(pose7_xyzw: Iterable[float], gripper_width: float) -> l
 
 
 def is_single_episode_dir(path: Path) -> bool:
-    required_dirs = [
-        path / "camera",
-        path / "localization",
-        path / "gripper",
+    if not path.is_dir():
+        return False
+    has_camera = (path / "camera").exists()
+    has_pose = (path / "arm").exists() or (path / "localization").exists()
+    has_gripper = (path / "gripper").exists()
+    return has_camera and has_pose and has_gripper
+
+
+def resolve_pose_and_gripper_dirs(
+    episode_dir: Path,
+    pose_device: str,
+    gripper_device: str,
+    pose_rel_path: str | None = None,
+) -> tuple[Path, Path]:
+    pose_candidates = []
+    if pose_rel_path:
+        pose_candidates.append(episode_dir / Path(pose_rel_path))
+    pose_candidates.extend(
+        [
+            episode_dir / "arm" / "endPose" / "sensorPose",
+            episode_dir / "arm" / "endPose" / "gripperPose",
+            episode_dir / "localization" / "pose" / pose_device,
+        ]
+    )
+    gripper_candidates = [
+        episode_dir / "gripper" / "encoder" / "gripperWidth",
+        episode_dir / "gripper" / "encoder" / gripper_device,
     ]
-    return path.is_dir() and all(required_dir.exists() for required_dir in required_dirs)
+
+    pose_dir = next((path for path in pose_candidates if path.is_dir()), pose_candidates[0])
+    gripper_dir = next(
+        (path for path in gripper_candidates if path.is_dir()), gripper_candidates[0]
+    )
+    return pose_dir, gripper_dir
 
 
 def parse_episode_index(episode_name: str) -> int:
@@ -265,10 +304,15 @@ def build_aligned_frames(
     camera_name: str,
     pose_device: str,
     gripper_device: str,
+    pose_rel_path: str | None = None,
 ) -> list[AlignedFrame]:
     rgb_dir = episode_dir / "camera" / "color" / camera_name
-    pose_dir = episode_dir / "localization" / "pose" / pose_device
-    gripper_dir = episode_dir / "gripper" / "encoder" / gripper_device
+    pose_dir, gripper_dir = resolve_pose_and_gripper_dirs(
+        episode_dir=episode_dir,
+        pose_device=pose_device,
+        gripper_device=gripper_device,
+        pose_rel_path=pose_rel_path,
+    )
 
     rgb_sync = read_sync_entries(rgb_dir / "sync.txt")
     pose_sync = read_sync_entries(pose_dir / "sync.txt")
@@ -455,6 +499,7 @@ def main() -> None:
             camera_name=args.camera_name,
             pose_device=args.pose_device,
             gripper_device=args.gripper_device,
+            pose_rel_path=args.pose_rel_path,
         )
         episode_output_dir = args.output_dir / episode_dir.name if multi_episode_mode else args.output_dir
         sample_count = export_samples(

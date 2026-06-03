@@ -18,7 +18,7 @@ import zarr
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_INPUT_PATH = REPO_ROOT / "dataset" / "single" / "20260429_fisheye_croped_single.zarr.zip"
+DEFAULT_INPUT_PATH = REPO_ROOT / "dataset" / "single" / "20260528_RGB_croped_single.zarr.zip"
 
 REQUIRED_KEYS = {
     "camera0_rgb": {

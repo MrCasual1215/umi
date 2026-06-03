@@ -5,18 +5,21 @@ read directly by diffusion_policy.dataset.umi_dataset.UmiDataset.
 
 Expected raw layout for each episode:
     episodeX/
-      camera/color/pikaFisheyeCamera/
+      camera/color/pikaGripperFisheyeCamera/
         sync.txt
         *.jpg
-      localization/pose/pika/
+      camera/color/pikaGripperDepthCamera/
+        sync.txt
+        *.jpg
+      arm/endPose/sensorPose/
         sync.txt
         *.json
-      gripper/encoder/pika/
+      gripper/encoder/gripperWidth/
         sync.txt
         *.json
 
-The script writes a ReplayBuffer-compatible dataset to:
-    /Users/sp/Desktop/umi_project/dataset/single/dataset.zarr.zip
+The script writes a ReplayBuffer-compatible dataset under:
+    REPO_ROOT / "dataset" / "single" / "*.zarr.zip"
 """
 
 from __future__ import annotations
@@ -42,16 +45,29 @@ if str(UMI_PROJECT_ROOT) not in sys.path:
 from diffusion_policy.common.replay_buffer import ReplayBuffer  # noqa: E402
 
 CROP = True
-FISHEYE = True
-DATE = "20260430"
+FISHEYE = False
+DATE = "20260601"
+TRIM_START_SECONDS = 0.03
+TRIM_END_SECONDS = 0.05
 
 DEFAULT_INPUT_ROOT = REPO_ROOT / "umidata" / "single" / DATE
 DEFAULT_OUTPUT_PATH = REPO_ROOT / "dataset" / "single" / f"{DATE}_{'fisheye' if FISHEYE else 'RGB'}_{'croped' if CROP else 'no_crop'}_single.zarr.zip"
 DEFAULT_TEST_OUTPUT_IMAGE = REPO_ROOT / "umidata" / "data_process" / "resize_img" / "test_resize_output.jpg"
+DEFAULT_EPISODE_LIST = (
+    REPO_ROOT
+    / "umidata"
+    / "data_process"
+    / f"clean_report_{DATE}"
+    / "structurally_usable_episodes.txt"
+)
 
-CAMERA_REL_PATH = Path(f"camera/color/pikaFisheyeCamera" if FISHEYE else "camera/color/pikaDepthCamera")
-POSE_REL_PATH = Path("localization/pose/pika")
-GRIPPER_REL_PATH = Path("gripper/encoder/pika")
+CAMERA_REL_PATH = Path(
+    "camera/color/pikaGripperFisheyeCamera"
+    if FISHEYE
+    else "camera/color/pikaGripperDepthCamera"
+)
+POSE_REL_PATH = Path("arm/endPose/sensorPose")
+GRIPPER_REL_PATH = Path("gripper/encoder/gripperWidth")
 
 OUTPUT_IMAGE_SIZE = (224, 224)  # width, height
 
@@ -64,7 +80,7 @@ def parse_args() -> argparse.Namespace:
         "--input-root",
         type=Path,
         default=DEFAULT_INPUT_ROOT,
-        help="Root directory containing episode* folders.",
+        help="Root directory for one date, containing episode* folders.",
     )
     parser.add_argument(
         "--output",
@@ -84,6 +100,24 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_TEST_OUTPUT_IMAGE,
         help="Output path for the resized preview image when --test-resize-image is used.",
     )
+    parser.add_argument(
+        "--trim-start-seconds",
+        type=float,
+        default=TRIM_START_SECONDS,
+        help="Trim this many seconds from the start of every episode.",
+    )
+    parser.add_argument(
+        "--trim-end-seconds",
+        type=float,
+        default=TRIM_END_SECONDS,
+        help="Trim this many seconds from the end of every episode.",
+    )
+    parser.add_argument(
+        "--episode-list",
+        type=Path,
+        default=DEFAULT_EPISODE_LIST,
+        help="Text file listing episode directories to convert, one per line.",
+    )
     return parser.parse_args()
 
 
@@ -99,6 +133,16 @@ def read_sync_file(sync_path: Path) -> List[str]:
     with sync_path.open("r", encoding="utf-8") as f:
         lines = [line.strip() for line in f.readlines()]
     return [line for line in lines if line]
+
+
+def read_episode_list(list_path: Path) -> List[str]:
+    with list_path.open("r", encoding="utf-8") as f:
+        lines = [line.strip() for line in f.readlines()]
+    return [line for line in lines if line]
+
+
+def parse_timestamp_from_path(file_name: str) -> float:
+    return float(Path(file_name).stem)
 
 
 def read_pose_json(json_path: Path) -> np.ndarray:
@@ -172,7 +216,42 @@ def run_resize_image_test(input_image: Path, output_image: Path) -> None:
     print(f"Resized image dtype: {resized_rgb.dtype}")
 
 
-def build_episode_data(episode_dir: Path) -> dict:
+def compute_trim_indices(
+    camera_files: List[str],
+    trim_start_seconds: float,
+    trim_end_seconds: float,
+) -> List[int]:
+    if trim_start_seconds < 0 or trim_end_seconds < 0:
+        raise ValueError("Trim seconds must be non-negative.")
+
+    timestamps = np.asarray(
+        [parse_timestamp_from_path(file_name) for file_name in camera_files],
+        dtype=np.float64,
+    )
+    start_timestamp = timestamps[0] + trim_start_seconds
+    end_timestamp = timestamps[-1] - trim_end_seconds
+    if start_timestamp > end_timestamp:
+        raise ValueError(
+            "Trim range removes the whole episode. "
+            f"start={trim_start_seconds:.3f}s, end={trim_end_seconds:.3f}s."
+        )
+
+    kept_indices = np.where(
+        (timestamps >= start_timestamp) & (timestamps <= end_timestamp)
+    )[0]
+    if kept_indices.size == 0:
+        raise ValueError(
+            "No frames remain after trimming. "
+            f"start={trim_start_seconds:.3f}s, end={trim_end_seconds:.3f}s."
+        )
+    return kept_indices.tolist()
+
+
+def build_episode_data(
+    episode_dir: Path,
+    trim_start_seconds: float = 0.0,
+    trim_end_seconds: float = 0.0,
+) -> dict:
     camera_dir = episode_dir / CAMERA_REL_PATH
     pose_dir = episode_dir / POSE_REL_PATH
     gripper_dir = episode_dir / GRIPPER_REL_PATH
@@ -213,7 +292,16 @@ def build_episode_data(episode_dir: Path) -> dict:
     pose_series = []
     gripper_widths = []
 
-    for idx in range(seq_len):
+    camera_files = camera_files[:seq_len]
+    pose_files = pose_files[:seq_len]
+    gripper_files = gripper_files[:seq_len]
+    kept_indices = compute_trim_indices(
+        camera_files=camera_files,
+        trim_start_seconds=trim_start_seconds,
+        trim_end_seconds=trim_end_seconds,
+    )
+
+    for idx in kept_indices:
         image_path = camera_dir / camera_files[idx]
         pose_path = pose_dir / pose_files[idx]
         gripper_path = gripper_dir / gripper_files[idx]
@@ -233,8 +321,9 @@ def build_episode_data(episode_dir: Path) -> dict:
     rgb_array = np.stack(rgb_frames, axis=0).astype(np.uint8)
     gripper_array = np.asarray(gripper_widths, dtype=np.float32).reshape(-1, 1)
 
-    start_pose = np.repeat(pose_array[:1], repeats=seq_len, axis=0)
-    end_pose = np.repeat(pose_array[-1:], repeats=seq_len, axis=0)
+    trimmed_seq_len = pose_array.shape[0]
+    start_pose = np.repeat(pose_array[:1], repeats=trimmed_seq_len, axis=0)
+    end_pose = np.repeat(pose_array[-1:], repeats=trimmed_seq_len, axis=0)
 
     return {
         "camera0_rgb": rgb_array,
@@ -257,14 +346,33 @@ def main() -> None:
 
     input_root = args.input_root.expanduser().resolve()
     output_path = args.output.expanduser().resolve()
+    episode_list_path = args.episode_list.expanduser().resolve()
 
     if not input_root.is_dir():
         raise FileNotFoundError(f"Input root does not exist: {input_root}")
+    if not episode_list_path.is_file():
+        raise FileNotFoundError(f"Episode list does not exist: {episode_list_path}")
 
-    episode_dirs = sorted(
-        [path for path in input_root.iterdir() if path.is_dir() and path.name.startswith("episode")],
-        key=episode_sort_key,
-    )
+    episode_names = read_episode_list(episode_list_path)
+    if not episode_names:
+        raise RuntimeError(f"Episode list is empty: {episode_list_path}")
+
+    episode_dirs = []
+    missing_episode_dirs = []
+    for episode_name in episode_names:
+        episode_dir = input_root / episode_name
+        if episode_dir.is_dir():
+            episode_dirs.append(episode_dir)
+        else:
+            missing_episode_dirs.append(episode_name)
+
+    if missing_episode_dirs:
+        raise FileNotFoundError(
+            "Some episode directories from the episode list do not exist under "
+            f"{input_root}: {missing_episode_dirs[:10]}"
+        )
+
+    episode_dirs = sorted(episode_dirs, key=episode_sort_key)
     if not episode_dirs:
         raise RuntimeError(f"No episode directories found in {input_root}")
 
@@ -276,11 +384,18 @@ def main() -> None:
 
     print(f"Input root: {input_root}")
     print(f"Output path: {output_path}")
+    print(f"Episode list: {episode_list_path}")
+    print(f"Trim start seconds: {args.trim_start_seconds}")
+    print(f"Trim end seconds: {args.trim_end_seconds}")
     print(f"Found {len(episode_dirs)} episode directories.")
 
     for episode_dir in tqdm(episode_dirs, desc="Converting episodes"):
         try:
-            episode_data = build_episode_data(episode_dir)
+            episode_data = build_episode_data(
+                episode_dir,
+                trim_start_seconds=args.trim_start_seconds,
+                trim_end_seconds=args.trim_end_seconds,
+            )
             replay_buffer.add_episode(data=episode_data, compressors=None)
             success_count += 1
         except Exception as exc:

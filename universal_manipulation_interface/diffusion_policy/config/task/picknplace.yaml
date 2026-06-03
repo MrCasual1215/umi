@@ -59,7 +59,7 @@ shape_meta: &shape_meta
     rotation_rep: rotation_6d
 
 task_name: &task_name picknplace
-dataset_path: ../dataset/single/20260430_RGB_croped_single.zarr.zip
+dataset_path: ../dataset/single/20260601_RGB_croped_single.zarr.zip
 pose_repr: &pose_repr
   obs_pose_repr: relative
   action_pose_repr: relative

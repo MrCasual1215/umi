@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+import json
 import socket
 import time
 from pathlib import Path
 from typing import Dict, Optional
 
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 from common import (
     build_status_response,
@@ -43,6 +45,14 @@ EMPTY_SAVE_INFO = {"save_dir": None, "payload_type": None, "saved_images": []}
 MAX_GRIPPER_WIDTH_M = 0.10
 MAX_INFERENCE_RETRIES = 3
 
+EPISODE_REPLAY_DATE_DIR = None  # e.g. "/home/sunpeng/sp/umi_project/umidata/single/20260513"
+EPISODE_REPLAY_EPISODE_NAME = None  # e.g. "episode0"
+EPISODE_REPLAY_ARM = None  # "arm_l" | "arm_r" | None
+
+# EPISODE_REPLAY_DATE_DIR =  "/home/sunpeng/sp/umi_project/umidata/single/20260526"
+# EPISODE_REPLAY_EPISODE_NAME = "episode123"
+# EPISODE_REPLAY_ARM = "arm_l"  # "arm_l" | "arm_r" | None    
+
 MAX_POSITION_STEP_M = 0.05
 MAX_ROTATION_STEP_RAD = 0.1
 MAX_GRIPPER_STEP_M = 0.08
@@ -65,16 +75,20 @@ LAST_ACTION_RESPONSE = None
 LAST_LOG_ACTION_RESPONSE = None
 LAST_INFERENCE_MONOTONIC = None
 EPISODE_INIT_POSES = {}
+EPISODE_ACTION_CHUNK = None
+EPISODE_ACTION_SOURCE = None
 
 
 def reset_handler() -> None:
-    global LATEST_OBSERVATION_PAYLOAD, LAST_ACTION_RESPONSE, LAST_LOG_ACTION_RESPONSE, LAST_INFERENCE_MONOTONIC, EPISODE_INIT_POSES
+    global LATEST_OBSERVATION_PAYLOAD, LAST_ACTION_RESPONSE, LAST_LOG_ACTION_RESPONSE, LAST_INFERENCE_MONOTONIC, EPISODE_INIT_POSES, EPISODE_ACTION_CHUNK, EPISODE_ACTION_SOURCE
     POLICY.reset()
     LATEST_OBSERVATION_PAYLOAD = None
     LAST_ACTION_RESPONSE = None
     LAST_LOG_ACTION_RESPONSE = None
     LAST_INFERENCE_MONOTONIC = None
     EPISODE_INIT_POSES = {}
+    EPISODE_ACTION_CHUNK = None
+    EPISODE_ACTION_SOURCE = None
 
 
 def maybe_save_payload(payload: Dict) -> Dict:
@@ -152,6 +166,147 @@ def _extract_init_pose_candidate(arm_payload: Dict) -> Optional[list[float]]:
         return _normalize_pose7(poses[0])
 
     return None
+
+
+def read_sync_entries(sync_path: Path) -> list[str]:
+    with sync_path.open("r", encoding="utf-8") as f:
+        return [line.strip() for line in f.readlines() if line.strip()]
+
+
+def read_pose_step(pose_path: Path) -> list[float]:
+    with pose_path.open("r", encoding="utf-8") as f:
+        pose_dict = json.load(f)
+
+    quat_xyzw = Rotation.from_euler(
+        "xyz",
+        [
+            float(pose_dict["roll"]),
+            float(pose_dict["pitch"]),
+            float(pose_dict["yaw"]),
+        ],
+        degrees=False,
+    ).as_quat()
+    return [
+        float(pose_dict["x"]),
+        float(pose_dict["y"]),
+        float(pose_dict["z"]),
+        float(quat_xyzw[0]),
+        float(quat_xyzw[1]),
+        float(quat_xyzw[2]),
+        float(quat_xyzw[3]),
+    ]
+
+
+def read_gripper_width(gripper_path: Path) -> float:
+    with gripper_path.open("r", encoding="utf-8") as f:
+        gripper_dict = json.load(f)
+    return float(gripper_dict["distance"])
+
+
+def load_episode_action_chunk(episode_dir: Path) -> list[list[float]]:
+    pose_dir = episode_dir / "arm" / "endPose" / "gripperPose"
+    gripper_dir = episode_dir / "gripper" / "encoder" / "gripperWidth"
+
+    pose_sync = pose_dir / "sync.txt"
+    gripper_sync = gripper_dir / "sync.txt"
+    missing_paths = [
+        str(path) for path in (pose_sync, gripper_sync) if not path.is_file()
+    ]
+    if missing_paths:
+        raise FileNotFoundError(
+            f"Episode is missing required sync files: {missing_paths}"
+        )
+
+    pose_files = read_sync_entries(pose_sync)
+    gripper_files = read_sync_entries(gripper_sync)
+    if not pose_files or not gripper_files:
+        raise ValueError(f"Episode sync.txt is empty: {episode_dir}")
+
+    seq_len = min(len(pose_files), len(gripper_files))
+    if seq_len <= 0:
+        raise ValueError(f"Episode has no usable aligned steps: {episode_dir}")
+
+    action_chunk = []
+    for idx in range(seq_len):
+        pose_path = pose_dir / pose_files[idx]
+        gripper_path = gripper_dir / gripper_files[idx]
+        if not pose_path.is_file():
+            raise FileNotFoundError(f"Missing pose file: {pose_path}")
+        if not gripper_path.is_file():
+            raise FileNotFoundError(f"Missing gripper file: {gripper_path}")
+
+        action_chunk.append(read_pose_step(pose_path) + [read_gripper_width(gripper_path)])
+
+    return action_chunk
+
+
+def get_configured_episode_dir() -> Optional[Path]:
+    has_date_dir = EPISODE_REPLAY_DATE_DIR is not None
+    has_episode_name = EPISODE_REPLAY_EPISODE_NAME is not None
+    if has_date_dir != has_episode_name:
+        raise ValueError(
+            "EPISODE_REPLAY_DATE_DIR and EPISODE_REPLAY_EPISODE_NAME must be set together."
+        )
+    if not has_date_dir:
+        return None
+
+    date_dir = Path(EPISODE_REPLAY_DATE_DIR).expanduser().resolve()
+    if not date_dir.is_dir():
+        raise FileNotFoundError(f"Configured date dir does not exist: {date_dir}")
+
+    episode_dir = date_dir / str(EPISODE_REPLAY_EPISODE_NAME)
+    if not episode_dir.is_dir():
+        raise FileNotFoundError(
+            f"Configured episode dir does not exist: {episode_dir}"
+        )
+    return episode_dir
+
+
+def ensure_episode_action_loaded() -> None:
+    global EPISODE_ACTION_CHUNK, EPISODE_ACTION_SOURCE
+
+    configured_episode_dir = get_configured_episode_dir()
+    if configured_episode_dir is None:
+        EPISODE_ACTION_CHUNK = None
+        EPISODE_ACTION_SOURCE = None
+        return
+
+    episode_source = str(configured_episode_dir)
+    if (
+        EPISODE_ACTION_CHUNK is not None
+        and EPISODE_ACTION_SOURCE == episode_source
+    ):
+        return
+
+    EPISODE_ACTION_CHUNK = load_episode_action_chunk(configured_episode_dir)
+    EPISODE_ACTION_SOURCE = episode_source
+
+    if VERBOSE:
+        print(
+            "[server] episode action loaded | "
+            f"episode_dir={EPISODE_ACTION_SOURCE} "
+            f"steps={len(EPISODE_ACTION_CHUNK)} "
+            f"arm={EPISODE_REPLAY_ARM or 'auto'}"
+        )
+
+
+def select_response_arm(
+    payload: Optional[Dict],
+    preferred_arm: Optional[str] = None,
+) -> str:
+    if preferred_arm in ("arm_l", "arm_r"):
+        return preferred_arm
+    if isinstance(payload, dict):
+        available_arms = [
+            arm_name
+            for arm_name in ("arm_l", "arm_r")
+            if isinstance(payload.get(arm_name), dict)
+        ]
+        if len(available_arms) == 1:
+            return available_arms[0]
+        if len(available_arms) > 1 and DEFAULT_POLICY_ARM in available_arms:
+            return DEFAULT_POLICY_ARM
+    return DEFAULT_POLICY_ARM
 
 
 def populate_missing_init_pose(payload: Dict) -> Dict:
@@ -383,6 +538,37 @@ def run_observation_inference() -> tuple[Dict, Dict]:
     return LAST_LOG_ACTION_RESPONSE, LAST_ACTION_RESPONSE
 
 
+def build_episode_action_response(observation_payload: Dict) -> Dict:
+    global LAST_ACTION_RESPONSE, LAST_LOG_ACTION_RESPONSE, LAST_INFERENCE_MONOTONIC
+
+    if EPISODE_ACTION_CHUNK is None:
+        raise RuntimeError("No episode action chunk has been configured.")
+
+    selected_arm = select_response_arm(
+        observation_payload,
+        preferred_arm=EPISODE_REPLAY_ARM,
+    )
+    response = {
+        "type": "action",
+        "action_l": EPISODE_ACTION_CHUNK if selected_arm == "arm_l" else [],
+        "action_r": EPISODE_ACTION_CHUNK if selected_arm == "arm_r" else [],
+        "timestamp": time.time(),
+    }
+    response = clamp_gripper_width(response)
+    LAST_LOG_ACTION_RESPONSE = response
+    LAST_ACTION_RESPONSE = response
+    LAST_INFERENCE_MONOTONIC = time.monotonic()
+
+    if VERBOSE:
+        print(
+            "[server] episode action replay prepared | "
+            f"source={EPISODE_ACTION_SOURCE} "
+            f"selected_arm={selected_arm} "
+            f"steps={len(EPISODE_ACTION_CHUNK)}"
+        )
+    return response
+
+
 def handle_reset(_payload: Dict):
     reset_handler()
     if VERBOSE:
@@ -430,6 +616,7 @@ def serve_forever() -> None:
                             f"type={raw_received_save_info['response_type']} "
                         )
                     if payload.get("type") == "observation":
+                        ensure_episode_action_loaded()
                         ## shakehands
                         shakehands_response = prepare_observation(payload)
                         raw_sent_save_info = save_raw_sent_json(shakehands_response)
@@ -440,8 +627,14 @@ def serve_forever() -> None:
                             )
                         # send_json_line(client_socket, shakehands_response, encoding=ENCODING)
 
-                        ## run inference
-                        log_response, response = run_observation_inference()
+                        ## run inference or replay configured episode action
+                        if EPISODE_ACTION_CHUNK is not None:
+                            log_response = build_episode_action_response(
+                                LATEST_OBSERVATION_PAYLOAD
+                            )
+                            response = log_response
+                        else:
+                            log_response, response = run_observation_inference()
                         raw_action_save_info = maybe_save_raw_action(log_response)
                         if VERBOSE and raw_action_save_info["file_path"] is not None:
                             print(
@@ -467,6 +660,12 @@ def serve_forever() -> None:
                                 f"type={raw_sent_save_info['response_type']} "
                             )
                         send_json_line(client_socket, response, encoding=ENCODING)
+                        if EPISODE_ACTION_CHUNK is not None:
+                            if VERBOSE:
+                                print(
+                                    "[server] episode action replay finished, shutting down server"
+                                )
+                            return
                         continue
 
                     immediate_response, response, should_save_response = handle_message(payload)
