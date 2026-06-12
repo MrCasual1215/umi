@@ -46,9 +46,9 @@ from diffusion_policy.common.replay_buffer import ReplayBuffer  # noqa: E402
 
 CROP = True
 FISHEYE = False
-DATE = "20260601"
-TRIM_START_SECONDS = 0.03
-TRIM_END_SECONDS = 0.05
+DATE = "20260602"
+TRIM_START_SECONDS = 0.1
+TRIM_END_SECONDS = 0.2
 
 DEFAULT_INPUT_ROOT = REPO_ROOT / "umidata" / "single" / DATE
 DEFAULT_OUTPUT_PATH = REPO_ROOT / "dataset" / "single" / f"{DATE}_{'fisheye' if FISHEYE else 'RGB'}_{'croped' if CROP else 'no_crop'}_single.zarr.zip"

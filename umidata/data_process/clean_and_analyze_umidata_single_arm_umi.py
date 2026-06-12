@@ -23,8 +23,8 @@ from typing import Dict, Iterable, List, Sequence, Tuple
 import numpy as np
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_INPUT_ROOT = REPO_ROOT / "umidata" / "single" / "20260601"
-DEFAULT_OUTPUT_DIR = REPO_ROOT / "umidata" / "data_process" / "clean_report_20260601"   
+DEFAULT_INPUT_ROOT = REPO_ROOT / "umidata" / "single" / "20260603"
+DEFAULT_OUTPUT_DIR = REPO_ROOT / "umidata" / "data_process" / "clean_report_20260603"   
 
 DEPTH_CAMERA_REL_PATH = Path("camera/color/pikaGripperDepthCamera")
 FISHEYE_CAMERA_REL_PATH = Path("camera/color/pikaGripperFisheyeCamera")

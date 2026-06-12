@@ -38,31 +38,7 @@ POLICY_CONFIGS = [
 # --------------------------------------------orange block -------------------------------------------- #
 
 # --------------------------------------------umi -------------------------------------------- #
-    # {
-    #     "task": "orange block",
-    #     "mode": "umi",
-    #     "camera": "rgb",
-    #     "crop": True,
-    #     "model": "unet_timm",
-    #     "train_episode_count": 201,
-    #     "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "latest"},
-    #     "checkpoint_path": (
-    #         "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.05.13/20.45.39_train_diffusion_unet_timm_picknplace/checkpoints"
-    #     ),
-    # },
-
-    # {
-    #     "task": "orange block",
-    #     "mode": "umi",
-    #     "camera": "rgb",
-    #     "crop": True,
-    #     "model": "unet_timm",
-    #     "train_episode_count": 201,
-    #     "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "latest"},
-    #     "checkpoint_path": (
-    #         "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.05.28/11.05.29_train_diffusion_unet_timm_picknplace/checkpoints"
-    #     ),
-    # },
+  
 
     {
         "task": "orange block",
@@ -71,25 +47,46 @@ POLICY_CONFIGS = [
         "crop": True,
         "model": "unet_timm",
         "train_episode_count": 251,
-        "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "latest"},
+        "epochs": {"latest"},
         "checkpoint_path": (
-            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.06.01/19.59.20_train_diffusion_unet_timm_picknplace/checkpoints"
+            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/a100_250_mixed/checkpoints"
         ),
-    },
+    },  ## include left and right 
 
 
-    {
-        "task": "orange block",
-        "mode": "umi",
-        "camera": "rgb",
-        "crop": True,
-        "model": "transformer",
-        "train_episode_count": 603,
-        "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "120", "130", "140", "150", "160", "latest"},
-        "checkpoint_path": (
-            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.05.29/14.57.20_train_diffusion_transformer_timm_picknplace/checkpoints"
-        ),
-    },
+
+
+    # {
+    #     "task": "orange block",
+    #     "mode": "umi",
+    #     "camera": "rgb",
+    #     "crop": True,
+    #     "model": "unet_timm",
+    #     "train_episode_count": 648,
+    #     "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "latest"},
+    #     "checkpoint_path": (
+    #         "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.06.03/17.30.02_train_diffusion_unet_timm_picknplace/checkpoints"
+    #     ),
+    # },   ## include left and right 
+
+
+    # {
+    #     "task": "orange block",
+    #     "mode": "umi",
+    #     "camera": "rgb",
+    #     "crop": True,
+    #     "model": "unet_timm",
+    #     "train_episode_count": 196,
+    #     "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "latest"},
+    #     "checkpoint_path": (
+    #         "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.06.05/19.34.08_train_diffusion_unet_timm_picknplace/checkpoints"
+    #     ),
+    # },   ## left only
+
+
+
+
+
 # --------------------------------------------tele -------------------------------------------- #
 
     {

@@ -2,14 +2,14 @@
 """
 Convert multiple single-arm UMI raw datasets into one merged dataset.zarr.zip.
 
-The merged converter currently targets these date roots:
-    - umidata/single/20260513
-    - umidata/single/20260526
-    - umidata/single/20260528
+The merged converter currently defaults to these date roots:
+    - umidata/single/20260601
+    - umidata/single/20260602
+    - umidata/single/20260603
 
-Data layout differences are handled automatically:
-    - 20260513 / 20260526 use arm/endPose/gripperPose
-    - 20260528 uses arm/endPose/sensorPose
+For each input root, the script auto-detects the pose layout:
+    - arm/endPose/sensorPose
+    - arm/endPose/gripperPose
 
 Validation is intentionally simple:
     - required sync.txt files must exist
@@ -44,9 +44,12 @@ from diffusion_policy.common.replay_buffer import ReplayBuffer  # noqa: E402
 
 CROP = True
 FISHEYE = False
-DATE_NAMES = ("20260513", "20260526", "20260528")
-TRIM_START_SECONDS = 0.0
-TRIM_END_SECONDS = 0.0
+DATE_NAMES = ("20260601", "20260602", "20260603")
+TRIM_START_SECONDS = 0.1
+TRIM_END_SECONDS = 0.2
+DEFAULT_INPUT_ROOTS = [
+    REPO_ROOT / "umidata" / "single" / date_name for date_name in DATE_NAMES
+]
 
 DEFAULT_OUTPUT_PATH = (
     REPO_ROOT
@@ -74,38 +77,10 @@ class DateSpec:
     episode_list_path: Path | None
 
 
-DATE_SPECS = {
-    "20260513": DateSpec(
-        date="20260513",
-        input_root=REPO_ROOT / "umidata" / "single" / "20260513",
-        pose_rel_path=Path("arm/endPose/gripperPose"),
-        episode_list_path=None,
-    ),
-    "20260526": DateSpec(
-        date="20260526",
-        input_root=REPO_ROOT / "umidata" / "single" / "20260526",
-        pose_rel_path=Path("arm/endPose/gripperPose"),
-        episode_list_path=(
-            REPO_ROOT
-            / "umidata"
-            / "data_process"
-            / "clean_report_20260526"
-            / "structurally_usable_episodes.txt"
-        ),
-    ),
-    "20260528": DateSpec(
-        date="20260528",
-        input_root=REPO_ROOT / "umidata" / "single" / "20260528",
-        pose_rel_path=Path("arm/endPose/sensorPose"),
-        episode_list_path=(
-            REPO_ROOT
-            / "umidata"
-            / "data_process"
-            / "clean_report_20260528"
-            / "structurally_usable_episodes.txt"
-        ),
-    ),
-}
+POSE_REL_PATH_CANDIDATES = (
+    Path("arm/endPose/sensorPose"),
+    Path("arm/endPose/gripperPose"),
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -113,10 +88,11 @@ def parse_args() -> argparse.Namespace:
         description="Convert multiple single-arm UMI raw datasets into one dataset.zarr.zip"
     )
     parser.add_argument(
-        "--dates",
+        "--input-roots",
         nargs="+",
-        default=list(DATE_NAMES),
-        help="Date names to merge. Supported values: 20260513 20260526 20260528",
+        type=Path,
+        default=DEFAULT_INPUT_ROOTS,
+        help="Input root directories to merge, each containing episode* folders.",
     )
     parser.add_argument(
         "--output",
@@ -387,14 +363,66 @@ def collect_episode_dirs(date_spec: DateSpec) -> List[Path]:
     return episode_dirs
 
 
-def resolve_date_specs(date_names: List[str]) -> List[DateSpec]:
+def resolve_episode_list_path(input_root: Path) -> Path | None:
+    episode_list_path = (
+        REPO_ROOT
+        / "umidata"
+        / "data_process"
+        / f"clean_report_{input_root.name}"
+        / "structurally_usable_episodes.txt"
+    )
+    if episode_list_path.is_file():
+        return episode_list_path
+    return None
+
+
+def resolve_pose_rel_path(input_root: Path, episode_list_path: Path | None) -> Path:
+    candidate_episode_dirs: List[Path] = []
+    if episode_list_path is not None:
+        for episode_name in read_episode_list(episode_list_path):
+            episode_dir = input_root / episode_name
+            if episode_dir.is_dir():
+                candidate_episode_dirs.append(episode_dir)
+    else:
+        candidate_episode_dirs = sorted(
+            [
+                path
+                for path in input_root.iterdir()
+                if path.is_dir() and path.name.startswith("episode")
+            ],
+            key=episode_sort_key,
+        )
+
+    for episode_dir in candidate_episode_dirs:
+        for pose_rel_path in POSE_REL_PATH_CANDIDATES:
+            if (episode_dir / pose_rel_path / "sync.txt").is_file():
+                return pose_rel_path
+
+    raise FileNotFoundError(
+        f"Could not detect pose path under {input_root}. "
+        "Expected one of: arm/endPose/sensorPose or arm/endPose/gripperPose"
+    )
+
+
+def resolve_date_specs(input_roots: List[Path]) -> List[DateSpec]:
     date_specs = []
-    for date_name in date_names:
-        if date_name not in DATE_SPECS:
-            raise ValueError(
-                f"Unsupported date {date_name!r}. Supported: {sorted(DATE_SPECS)}"
+    for input_root in input_roots:
+        resolved_input_root = input_root.expanduser().resolve()
+        if not resolved_input_root.is_dir():
+            raise FileNotFoundError(f"Input root does not exist: {resolved_input_root}")
+        episode_list_path = resolve_episode_list_path(resolved_input_root)
+        pose_rel_path = resolve_pose_rel_path(
+            input_root=resolved_input_root,
+            episode_list_path=episode_list_path,
+        )
+        date_specs.append(
+            DateSpec(
+                date=resolved_input_root.name,
+                input_root=resolved_input_root,
+                pose_rel_path=pose_rel_path,
+                episode_list_path=episode_list_path,
             )
-        date_specs.append(DATE_SPECS[date_name])
+        )
     return date_specs
 
 
@@ -407,7 +435,7 @@ def main() -> None:
         )
         return
 
-    date_specs = resolve_date_specs(args.dates)
+    date_specs = resolve_date_specs(args.input_roots)
     output_path = args.output.expanduser().resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
 

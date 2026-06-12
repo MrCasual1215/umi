@@ -69,6 +69,12 @@ cd ~/sp/umi_project/universal_manipulation_interface/
 conda activate umi
 python3 train.py --config-name=train_diffusion_unet_timm_umi_workspace task=picknplace
 ```
+```Shell
+cd ~/sp/umi_project/universal_manipulation_interface/
+conda activate umi
+python3 train.py --config-name=train_diffusion_transformer_cloth_workspace task=cloth
+```
+
 
 #### 2.3 延时训练
 
