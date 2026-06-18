@@ -25,6 +25,7 @@ from config import (
     MAX_CLIENTS,
     POLICY_CHECKPOINT_PATH,
     DEFAULT_POLICY_ARM,
+    POLICY_ARM_MODE,
     VERBOSE,
     DATA_SAVE,
     PICT_SAVE,
@@ -33,6 +34,7 @@ from config import (
     ACTION_CHUNK_HORIZON,
     ADD_HEIGHT,
     HEIGHT,
+    ROBOT1_TO_ROBOT0_TX,
 )
 
 OUTPUT_ROOT = Path(__file__).resolve().parent / "output"
@@ -63,6 +65,8 @@ POLICY = PolicyInference(
     checkpoint_path=POLICY_CHECKPOINT_PATH,
     checkpoint_epoch=EPOCH,
     preferred_arm=DEFAULT_POLICY_ARM,
+    arm_mode=POLICY_ARM_MODE,
+    robot1_to_robot0_tx=ROBOT1_TO_ROBOT0_TX,
     verbose=VERBOSE,
     _print=DATA_SAVE,
     img_save=PICT_SAVE,
@@ -141,6 +145,18 @@ def build_saved_inference_record(observation_payload: Dict, action_response: Dic
     record = dict(action_response)
     record["observation"] = extract_observation_arm_payload(observation_payload)
     return record
+
+
+def get_protocol_arm_names(payload: Optional[Dict] = None) -> list[str]:
+    if POLICY_ARM_MODE == "bimanual":
+        return ["arm_l", "arm_r"]
+
+    return [
+        select_response_arm(
+            payload=payload,
+            preferred_arm=DEFAULT_POLICY_ARM,
+        )
+    ]
 
 
 def _normalize_pose7(pose) -> Optional[list[float]]:
@@ -435,6 +451,19 @@ def validate_action_chunk(action_chunk: list, action_key: str) -> tuple[bool, st
 
 
 def validate_action_response(response: Dict) -> tuple[bool, str]:
+    response_arm_mode = str(response.get("arm_mode", POLICY_ARM_MODE)).strip().lower()
+    if response_arm_mode not in {"single", "bimanual"}:
+        return False, f"invalid_arm_mode={response.get('arm_mode')!r}"
+
+    if response_arm_mode == "bimanual":
+        missing_keys = [
+            action_key
+            for action_key in ("action_l", "action_r")
+            if not isinstance(response.get(action_key), list)
+        ]
+        if missing_keys:
+            return False, f"bimanual response missing action keys: {missing_keys}"
+
     reasons = []
     for action_key in ("action_l", "action_r"):
         action_chunk = response.get(action_key)
@@ -450,17 +479,19 @@ def validate_action_response(response: Dict) -> tuple[bool, str]:
 
 
 def build_shakehands_response(payload: Dict, received_timestamp: float) -> Dict:
-    arm = DEFAULT_POLICY_ARM
-    for arm_name in ("arm_l", "arm_r"):
-        if isinstance(payload.get(arm_name), dict):
-            arm = arm_name
-            break
-    return {
+    arm_names = get_protocol_arm_names(payload)
+    response = {
         "type": "shakehands",
-        "arm": arm,
+        "arm_mode": POLICY_ARM_MODE,
+        "arms": arm_names,
         "sent_timestamp": time.time(),
         "received_timestamp": received_timestamp,
     }
+    if POLICY_ARM_MODE == "single":
+        response["arm"] = arm_names[0]
+    else:
+        response["arm"] = None
+    return response
 
 
 def prepare_observation(payload: Dict) -> Dict:
@@ -550,6 +581,8 @@ def build_episode_action_response(observation_payload: Dict) -> Dict:
     )
     response = {
         "type": "action",
+        "arm_mode": POLICY_ARM_MODE,
+        "arms": [selected_arm],
         "action_l": EPISODE_ACTION_CHUNK if selected_arm == "arm_l" else [],
         "action_r": EPISODE_ACTION_CHUNK if selected_arm == "arm_r" else [],
         "timestamp": time.time(),

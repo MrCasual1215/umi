@@ -377,6 +377,43 @@ def compose_transform(rot_a_b, trans_a_b, rot_b_c, trans_b_c):
     return rot_a_c, trans_a_c
 
 
+def format_python_value(value):
+    return repr(float(value))
+
+
+def format_python_vector(name, values):
+    formatted = ", ".join(format_python_value(v) for v in values)
+    return f"{name} = [{formatted}]"
+
+
+def format_python_matrix(name, matrix):
+    rows = []
+    for row in matrix:
+        formatted_row = ", ".join(format_python_value(v) for v in row)
+        rows.append(f"    [{formatted_row}]")
+    return f"{name} = [\n" + ",\n".join(rows) + "\n]"
+
+
+def write_python_constants(py_out_path, estimated_solution):
+    content = "\n\n".join(
+        [
+            format_python_vector(
+                "T_BASE_TAG", estimated_solution["translation_base_board_m"]
+            ),
+            format_python_matrix(
+                "R_BASE_TAG", estimated_solution["rotation_base_board"]
+            ),
+            format_python_vector(
+                "T_SENSOR_CAM", estimated_solution["translation_sensor_cam_m"]
+            ),
+            format_python_matrix(
+                "R_SENSOR_CAM", estimated_solution["rotation_sensor_cam"]
+            ),
+        ]
+    )
+    py_out_path.write_text(content + "\n", encoding="utf-8")
+
+
 def compute_base_board_poses(
     sensor_rotations,
     sensor_positions,
@@ -638,6 +675,7 @@ def main():
     args = parse_args()
     if args.out is None:
         args.out = args.episode_dir / "base_to_board_calibration.json"
+    py_out = args.out.with_suffix(".py")
 
     camera_dir = args.episode_dir / "camera" / "color" / args.camera_name
     sensor_dir = args.episode_dir / "arm" / "endPose" / "sensorPose"
@@ -775,7 +813,9 @@ def main():
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
+    write_python_constants(py_out, result["estimated_solution"])
     print(f"Saved result to {args.out}")
+    print(f"Saved python constants to {py_out}")
 
 
 if __name__ == "__main__":

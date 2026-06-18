@@ -55,10 +55,10 @@ def decode_jpeg_to_png(image_b64: str) -> bytes:
 
     jpeg_bytes = base64.b64decode(image_b64, validate=True)
     image_buffer = np.frombuffer(jpeg_bytes, dtype=np.uint8)
-    rgb_image = cv2.imdecode(image_buffer, cv2.IMREAD_COLOR) 
-    if rgb_image is None:
+    bgr_image = cv2.imdecode(image_buffer, cv2.IMREAD_COLOR) 
+    if bgr_image is None:
         raise ValueError("Failed to decode JPG image data.")
-    # rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
+    rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
     _, _, channels = rgb_image.shape
     if channels != 3:
         raise ValueError(f"Expected 3 RGB channels, got {channels}")
