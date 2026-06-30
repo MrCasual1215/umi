@@ -9,15 +9,41 @@ MAX_CLIENTS = 1
 
 
 ## ------------------------------------- Policy inference ------------------------------------
-TASK = "orange block" # "orange block" or "cloth"
-MODE = "tele"  # "umi" or "tele"
+TASK = "sweather" # "orange block" or "cloth"
+MODE = "umi"  # "umi" or "tele"
 CAMERA = "rgb" # "rgb"
 EPOCH = "latest"  # "latest"
 CROP = True   
-POLICY_MODEL = "unet_timm"  # "unet_timm" or "transformer"
-POLICY_ARM_MODE = "single"  # "single" or "bimanual"
+POLICY_MODEL = "transformer"  # "unet_timm" or "transformer"
+POLICY_ARM_MODE = "bimanual"  # "single" or "bimanual"
 ADD_HEIGHT = False
 HEIGHT = 0.0 # meters  
+
+LPC = False
+LDX = False
+
+
+if LPC:
+    TASK = "lpc" # 
+    MODE = "tele"  # "umi" or "tele"
+    CAMERA = "rgb" # "rgb"
+    EPOCH = "latest"  # "latest"
+    CROP = True   
+    POLICY_MODEL = "unet_timm"  # "unet_timm" or "transformer"
+    POLICY_ARM_MODE = "single"  # "single" or "bimanual"
+
+
+if LDX:
+    TASK = "ldx" # 
+    MODE = "tele"  # "umi" or "tele"
+    CAMERA = "rgb" # "rgb"
+    EPOCH = "latest"  # "latest"
+    CROP = True   
+    POLICY_MODEL = "transformer"  # "unet_timm" or "transformer"
+    POLICY_ARM_MODE = "bimanual"  # "single" or "bimanual"
+
+
+
 
 
 
@@ -46,6 +72,43 @@ ACTION_CHUNK_HORIZON = 16 ## Keep the first N actions from the predicted action 
 POLICY_CONFIGS = [
 # --------------------------------------------orange block -------------------------------------------- #
 
+# --------------------------------------------ldx -------------------------------------------- #
+
+    {
+        "task": "ldx",
+        "mode": "tele",
+        "camera": "rgb",
+        "crop": True,
+        "model": "transformer",
+        "arm_mode": "bimanual",
+        "train_episode_count": 50,
+        "epochs": {"latest"},
+        "checkpoint_path": (
+            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/ldx_0626/"
+        ),
+    },  ## include left and right 
+
+
+
+
+# --------------------------------------------lpc -------------------------------------------- #
+
+    {
+        "task": "lpc",
+        "mode": "tele",
+        "camera": "rgb",
+        "crop": True,
+        "model": "unet_timm",
+        "arm_mode": "single",
+        "train_episode_count": 60,
+        "epochs": {"latest"},
+        "checkpoint_path": (
+            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.06.18/16.47.02_train_diffusion_unet_timm_picknplace/checkpoints"
+        ),
+    },  ## include left and right 
+
+
+
 # --------------------------------------------umi -------------------------------------------- #
   
 
@@ -64,62 +127,20 @@ POLICY_CONFIGS = [
     },  ## include left and right 
 
     {
-        "task": "cloth",
+        "task": "sweather",
         "mode": "umi",
         "camera": "rgb",
         "crop": True,
         "model": "transformer",
         "arm_mode": "bimanual",
-        "train_episode_count": 251,
-        "epochs": {"60", "latest"},
-        "checkpoint_path": (
-            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/a100_dual_shorts/checkpoints"
-        ),
-    },
-
-    {
-        "task": "cloth",
-        "mode": "umi",
-        "camera": "fisheye",
-        "crop": True,
-        "model": "transformer",
-        "arm_mode": "bimanual",
-        "train_episode_count": 251,
+        "train_episode_count": 297,
         "epochs": {"latest"},
         "checkpoint_path": (
-            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/a100_dual_shorts_fisheye/checkpoints"
+            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/z0629_sweather_RGB/"
         ),
     },
 
 
-
-
-    # {
-    #     "task": "orange block",
-    #     "mode": "umi",
-    #     "camera": "rgb",
-    #     "crop": True,
-    #     "model": "unet_timm",
-    #     "train_episode_count": 648,
-    #     "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "latest"},
-    #     "checkpoint_path": (
-    #         "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.06.03/17.30.02_train_diffusion_unet_timm_picknplace/checkpoints"
-    #     ),
-    # },   ## include left and right 
-
-
-    # {
-    #     "task": "orange block",
-    #     "mode": "umi",
-    #     "camera": "rgb",
-    #     "crop": True,
-    #     "model": "unet_timm",
-    #     "train_episode_count": 196,
-    #     "epochs": {"10", "20", "30", "40", "50", "60", "70", "80", "90", "100", "110", "latest"},
-    #     "checkpoint_path": (
-    #         "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/2026.06.05/19.34.08_train_diffusion_unet_timm_picknplace/checkpoints"
-    #     ),
-    # },   ## left only
 
 
 
@@ -141,6 +162,19 @@ POLICY_CONFIGS = [
         ),
     },
 
+    {
+        "task": "sweather",
+        "mode": "tele",
+        "camera": "rgb",
+        "crop": True,
+        "model": "transformer",
+        "arm_mode": "bimanual",
+        "train_episode_count": 105,
+        "epochs": {"latest"},
+        "checkpoint_path": (
+          "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/z0624_sweather_RGB/"
+        ),
+    },
 ]
 
 

@@ -1,6 +1,11 @@
 ### others
 umidata/single/
 umidata/double/
+
+lpc/
+ldx/
+
+
 umidata/data_process/clean_report_*
 umidata/data_process/resize_img/
 
@@ -8,9 +13,7 @@ universal_manipulation_interface/realworld_deploy/output/
 universal_manipulation_interface/openloop_validate/validation_output/
 universal_manipulation_interface/openloop_validate/json_output/
 
-dataset/single/
-dataset/double/
-dataset/opensource/
+dataset/*
 .git_backup/
 
 calibration/data/
