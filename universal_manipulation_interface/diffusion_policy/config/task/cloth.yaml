@@ -114,8 +114,8 @@ shape_meta: &shape_meta
     rotation_rep: rotation_6d
 
 task_name: &task_name cloth
-# dataset_path: ../dataset/double/20260610_shorts_RGB_croped_dual.zarr.zip
-dataset_path: ../ldx/dataset/double/grip_red_pink_RGB_croped_dual.zarr.zip
+dataset_path: ../dataset/double/sweather_0630_plus_sweather_0701_RGB_croped_dual.zarr.zip
+# dataset_path: ../ldx/dataset/double/grip_red_pink_RGB_croped_dual.zarr.zip
 
 pose_repr: &pose_repr
   obs_pose_repr: relative

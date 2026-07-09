@@ -9,10 +9,10 @@ MAX_CLIENTS = 1
 
 
 ## ------------------------------------- Policy inference ------------------------------------
-TASK = "sweather" # "orange block" or "cloth"
+TASK = "sweather" # "orange block" 
 MODE = "umi"  # "umi" or "tele"
-CAMERA = "rgb" # "rgb"
-EPOCH = "latest"  # "latest"
+CAMERA = "fisheye" # "rgb"
+EPOCH = "80"  # "latest"
 CROP = True   
 POLICY_MODEL = "transformer"  # "unet_timm" or "transformer"
 POLICY_ARM_MODE = "bimanual"  # "single" or "bimanual"
@@ -58,7 +58,7 @@ ROBOT1_TO_ROBOT0_TX = (
 )
 
 # Logging / saving
-BOOL = True
+BOOL = False
 VERBOSE = BOOL     ## Whether to print verbose messages.
 DATA_SAVE = BOOL     ## Whether to save payload records.
 PICT_SAVE = BOOL ## Whether to save payload records.
@@ -133,12 +133,43 @@ POLICY_CONFIGS = [
         "crop": True,
         "model": "transformer",
         "arm_mode": "bimanual",
-        "train_episode_count": 297,
+        "train_episode_count": 250,
         "epochs": {"latest"},
         "checkpoint_path": (
-            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/z0629_sweather_RGB/"
+            # "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/z0629_sweather_RGB/"
+            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/z0701_sweather_RGB/"
         ),
     },
+
+    # {
+    #     "task": "sweather",
+    #     "mode": "umi",
+    #     "camera": "fisheye",
+    #     "crop": True,
+    #     "model": "transformer",
+    #     "arm_mode": "bimanual",
+    #     "train_episode_count": 238,
+    #     "epochs": {"100"},
+    #     "checkpoint_path": (
+    #         "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/z0703_sweather_fisheye/"
+    #     ),
+    # },
+
+    {
+        "task": "sweather",
+        "mode": "umi",
+        "camera": "fisheye",
+        "crop": True,
+        "model": "transformer",
+        "arm_mode": "bimanual",
+        "train_episode_count": 230,
+        "epochs": {"latest", "80"},
+        "checkpoint_path": (
+            "/home/sunpeng/sp/umi_project/universal_manipulation_interface/data/outputs/z0708_sweather_white_fisheye/"
+        ),
+    },
+    
+    
 
 
 
